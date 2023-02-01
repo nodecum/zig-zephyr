@@ -1,0 +1,3 @@
+#!/bin/bash
+# adapt to the target cpu and path where the zephyr sdk is installed 
+~/bin/zephyr-sdk-0.15.1/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc "$@"

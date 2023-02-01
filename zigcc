@@ -1,0 +1,6 @@
+#!/bin/bash
+#if [[ $1 == *"empty_file.c.obj"* ]]; then
+#    $(dirname "$0")/zephyr-sdk-gcc "$@"
+#else
+    zig cc "$@"
+#fi

@@ -1,0 +1,50 @@
+* zig-zephyr
+Case study of interweaving zephyr and zig
+
+** Step One, Using the zig C compiler to compile zephyr
+We try to setup a toolchain which uses ~zig cc~ as C compiler.
+
+By following the [[https://docs.zephyrproject.org/latest/develop/toolchains/custom_cmake.html][Custom CMake]] Guide of Zephyr we use this repository
+as ~TOOLCHAIN_ROOT~ with the cmake files under the ~cmake~ directory
+and setting the ~TOOLCHAIN_VARIANT~ to ~zig~.
+
+For the generic (host) part of the build we use the zephyr-sdk toolchain.
+We just direct some files to the correspondig files in ~ZEPHYR_BASE~.
+Zig specific settings are in ~cmake/compiler/zig/target.cmake~.
+I just tried it for an arm board (adafruit_feather_nrf52840) so it is
+written for satisfy this needs.
+
+Adapt to your environment:
+- setting the ~ZEPHYR_SDK_INSTALL_DIR~ in ~CMakeLists.txt~
+
+I setup Zephyr like I described [[https://learn.nodecum.org/env/build-environment/][here]].
+
+*** compilation
+for compiling the example with the zephyr sdk use:
+: west build -b adafruit_feather_nrf52840 -p always
+this should compile and build without failure. I used a recent head of zephyr (3.2.99).
+
+To compile it using zig cc:
+: west build -b adafruit_feather_nrf52840 -p always -- -DUSEZIG=1
+this will compile the Zephyr c files using zig cc. It stops at
+: [149/159] Linking C executable zephyr/zephyr_pre0.elf
+and tells 
+: ld.lld: error: cannot find linker script -Map
+I was not able to adapt the linker invocation right now. The C compiler is called
+for this step.
+
+I tried to use zephyr-sdk-gcc for this step by uncommenting the conditional
+clause in ~zigcc~ which is the wrapper for ~zig cc~.
+
+If we do this we have no complaining about the arguments but get
+an
+: undefined reference to `__aeabi_memclr8'
+
+This is not too surprising because we used clang to compile and not gcc.
+
+To view the invocation of the compiler do:
+: cd build
+: ninja -v
+
+That is where I get stuck right now.
+I would appreciate hints about the toolchain setup and linking details.
