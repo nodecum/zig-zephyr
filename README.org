@@ -1,7 +1,29 @@
 * zig-zephyr
 Case study of interweaving zephyr and zig
 
-** Step One, Using the zig C compiler to compile zephyr
+Motivation
+
+[[https://zephyrproject.org][Zephyr]] is a mature RTOS which is written in C,
+[[https://ziglang.org][Zig]] is a new envolving programming language.
+
+We like to investigate the possibilities of using Zig in the context
+of Zephyr. This could mean:
+- writing the application in Zig
+- write Zephyr drivers or modules in Zig
+- use Zig as Build System
+Could this be achieved in a minimal invasive approache?
+
+One existing example for an aplication written in Zig using Zephyr can be found here:
+[[https://github.com/tangybbq/non-c-on-zephyr/tree/main/05-zig-zephyr-hello][zig-zephyr-hello]] . What could be improved to get a smoother interaction without forcing
+us to write wrappers in C to make use of Zephyr from Zig.
+
+Inspired from Lup Yuen Lee's [[https://zig.news/lupyuen/build-an-lvgl-touchscreen-app-with-zig-38lm][Article]] about Building an App with Zig and Apache NuttX RTOS
+we will try to translate C Code to Zig using ~zig translate-c~.
+We have to do this in the context of the Zephyr Build process, all compiler flags
+have to be identical like for invoking the C compiler.
+Therefore we start with:
+  
+** Step One, using the zig C compiler to compile zephyr
 We try to setup a toolchain which uses ~zig cc~ as C compiler.
 
 By following the [[https://docs.zephyrproject.org/latest/develop/toolchains/custom_cmake.html][Custom CMake]] Guide of Zephyr we use this repository
@@ -26,25 +48,32 @@ this should compile and build without failure. I used a recent head of zephyr (3
 
 To compile it using zig cc:
 : west build -b adafruit_feather_nrf52840 -p always -- -DUSEZIG=1
-this will compile the Zephyr c files using zig cc. It stops at
+this will compile the Zephyr c files using zig cc.
+
+After flashig like
+: west flash -r blackmagicprobe --gdb-serial /dev/ttyACM0 --skip-rebuild --elf-file build/zephyr/zephyr.elf 
+I got a blinky LED.
+
+*** remarks
+The critical step was the _Unfixed size binary_ [[https://docs.zephyrproject.org/latest/build/cmake/index.html][Build Step]] which builds ~zephyr_pre0.elf~. 
+If we use zigs clang it stops at
 : [149/159] Linking C executable zephyr/zephyr_pre0.elf
 and tells 
 : ld.lld: error: cannot find linker script -Map
-I was not able to adapt the linker invocation right now. The C compiler is called
-for this step.
+The C compiler is called for this step.
 
-I tried to use zephyr-sdk-gcc for this step by uncommenting the conditional
-clause in ~zigcc~ which is the wrapper for ~zig cc~.
+Then I tried to use the zephyr-sdk-gcc for this step by
+writing a conditional
+clause in ~zigcc~, which is the wrapper for ~zig cc~.
 
 If we do this we have no complaining about the arguments but get
 an
 : undefined reference to `__aeabi_memclr8'
 
-This is not too surprising because we used clang to compile and not gcc.
+This could be solved by adding ~-lc_nano~ to the compiler ars which links
+in the nano libc.
 
 To view the invocation of the compiler do:
 : cd build
 : ninja -v
 
-That is where I get stuck right now.
-I would appreciate hints about the toolchain setup and linking details.

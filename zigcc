@@ -1,6 +1,12 @@
 #!/bin/bash
-#if [[ $1 == *"empty_file.c.obj"* ]]; then
-#    $(dirname "$0")/zephyr-sdk-gcc "$@"
-#else
+# the zig cc wrapper
+#
+# if we find empty_file.c.obj in the first arg
+# (building zephyr_pre0, zephyr_pre1) we use
+# the gcc instead of zigs clang which will fail for
+# this invocation
+if [[ $1 == *"empty_file.c.obj"* ]]; then
+    $(dirname "$0")/zephyr-sdk-gcc "$@" -lc_nano
+else
     zig cc "$@"
-#fi
+fi
