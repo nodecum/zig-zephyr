@@ -18,7 +18,7 @@
  * See the sample documentation for information on how to fix this.
  */
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
-
+ 
 void main(void)
 {
 	int ret;

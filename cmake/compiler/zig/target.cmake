@@ -22,7 +22,7 @@ if(NOT "${ARCH}" STREQUAL "posix")
 
   if("${ARCH}" STREQUAL "arm")
 
-    list(APPEND TOOLCHAIN_C_FLAGS -target arm-freestanding-eabi)
+    set(ZIG_TARGET arm-freestanding-eabi)
     
     if (CONFIG_CPU_CORTEX_M0)
       set(ZIG_M_CPU cortex_m0)
@@ -38,7 +38,6 @@ if(NOT "${ARCH}" STREQUAL "posix")
       message(FATAL_ERROR "Expected CONFIG_CPU_CORTEX_x to be defined")
     endif()
 
-    list(APPEND TOOLCHAIN_C_FLAGS -mcpu=${ZIG_M_CPU})
     
     list(APPEND TOOLCHAIN_C_FLAGS -fshort-enums )
     list(APPEND TOOLCHAIN_LD_FLAGS -fshort-enums )
@@ -47,6 +46,10 @@ if(NOT "${ARCH}" STREQUAL "posix")
     
   endif() # "${ARCH}" STREQUAL "arm"
 
+  list(APPEND TOOLCHAIN_C_FLAGS -target ${ZIG_TARGET})
+  list(APPEND TOOLCHAIN_C_FLAGS -mcpu=${ZIG_M_CPU})
+
+  
   foreach(file_name include/stddef.h)
     execute_process(
       COMMAND ${CMAKE_C_COMPILER} --print-file-name=${file_name}

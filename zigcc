@@ -1,12 +1,20 @@
 #!/bin/bash
 # the zig cc wrapper
 #
+
+script_dir=$(dirname "$0")
+
 # if we find empty_file.c.obj in the first arg
 # (building zephyr_pre0, zephyr_pre1) we use
 # the gcc instead of zigs clang which will fail for
 # this invocation
 if [[ $1 == *"empty_file.c.obj"* ]]; then
-    $(dirname "$0")/zephyr-sdk-gcc "$@" -lc_nano
+    $script_dir/zephyr-sdk-gcc "$@" -lc_nano
 else
     zig cc "$@"
+fi
+if [[ "$@" == *"main.c"* ]]; then
+    zig cc "$@" 
+    echo "$@" > $script_dir/out/main.c.args 
+    # zig translate-c "$@" > $script_dir/out/main.c.zig
 fi

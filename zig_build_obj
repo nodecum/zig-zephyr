@@ -1,0 +1,12 @@
+#!/bin/bash
+# the zig wrapper
+#
+
+script_dir=$(dirname "$0")
+
+if [[ "$@" == *"main.zig"* ]]; then
+    echo "zig build-obj $@" > $script_dir/out/main.zig.args
+    zig build-obj "$@" 
+else
+    zig build-obj "$@"
+fi
