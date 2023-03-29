@@ -5,7 +5,9 @@
 script_dir=$(dirname "$0")
 
 if [[ "$@" == *"main.zig"* ]]; then
-    echo "zig build-obj $@" > $script_dir/out/main.zig.args
+    if [[ -d $script_dir/out ]]; then
+	echo "zig build-obj $@" > $script_dir/out/main.zig.args
+    fi
     zig build-obj "$@" 
 else
     zig build-obj "$@"

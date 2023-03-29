@@ -14,7 +14,9 @@ else
     zig cc "$@"
 fi
 if [[ "$@" == *"main.c"* ]]; then
-    zig cc "$@" 
-    echo "$@" > $script_dir/out/main.c.args 
-    # zig translate-c "$@" > $script_dir/out/main.c.zig
+    zig cc "$@"
+    if [[ -d $script_dir/out ]]; then
+       echo "$@" > $script_dir/out/main.c.args 
+       # zig translate-c "$@" > $script_dir/out/main.c.zig
+    fi
 fi
