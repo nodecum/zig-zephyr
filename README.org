@@ -17,13 +17,64 @@ One existing example for an aplication written in Zig using Zephyr can be found 
 [[https://github.com/tangybbq/non-c-on-zephyr/tree/main/05-zig-zephyr-hello][zig-zephyr-hello]] . What could be improved to get a smoother interaction without forcing
 us to write wrappers in C to make use of Zephyr from Zig.
 
+** Current Status
+- [X] Devicetree is translated to Zig because C Devicetree macros are not usable from Zig.
+- [X] Writing a Zephyr application in Zig, using C imported types and functions.
+- [X] Compiling Zephyr using ~zig cc~ as toolchain (linking zephyr_pre0.elf step does not work).
+- [ ] Translate KConfig to Zig    
+- [ ] Building Zephyr using the Zig build system instead of CMake
+
+** Preconditions
+  - A working Zephyr setup. I set it up as I have described it [[https://learn.nodecum.org/env/build-environment/][here]].
+    I used the zephyr sdk as non-zig toolchain.
+  - In order to compile the Zig example the file
+    : zephyrproject/zephyr/scripts/build/gen_syscalls.py
+     has to be patched by moving the line
+    : wrap += "\t" + "compiler_barrier();\n"
+    just before the line:
+    : wrap += "#endif\n"
+    or removing it at all. The reason for this is propably a bug in Zig
+    which refuses to inline the syscall functions if the compiler (memory) barrier is there
+    an results in undefined references.
+  - An Arm Board for testing. For other boards the file of this repository
+    : zig-zephyr/cmake/compiler/zig/zig-target.cmake
+    could be extended.
+  - If using ~zig cc~ as toolchain, then the path of the zephyr sdk has to be adapted to your
+    installation in the file ~CMakeLists.txt~:
+    : set(ZEPHYR_SDK_INSTALL_DIR $ENV{HOME}/bin/zephyr-sdk-0.15.1)
+  - The file ~src/c.zig~ contains a board (in our case for adafruit_feather_nrf52840)
+    specific define:
+    : @cDefine("NRF52840_XXAA", "");
+    this should be changed to suits your board.   
+    
+** Building the Examples
+  You have to adapt the commands for your board, I used the adafruit_feather_nrf52840 board.
+  The C application (~src/main.c) is the blinky example taken from the Zephyr samples.
+  The Zig application (~src/main.zig) is the equivalent in zig.
+
+  - Compile ~main.c~ using Zephyr sdk 
+    : west build -d build -b adafruit_feather_nrf52840 -p
+  - Compile ~main.c~ using ~zig cc~
+    : west build -d build -b adafruit_feather_nrf52840 -p -- -DZIGCC=1
+  - Compile ~main.zig~ using Zephyr sdk
+    : west build -d build -b adafruit_feather_nrf52840 -p -- -DZIGMAIN=1
+  - Compile ~main.zig~ using ~zig cc~
+    : west build -d build -b adafruit_feather_nrf52840 -p -- -DZIGCC=1 -DZIGMAIN=1
+
+** Running 
+  Is done like usual by flashing the image to the board, for example:
+  : west flash -r blackmagicprobe --gdb-serial /dev/ttyACM0 --skip-rebuild --elf-file build/zephyr/zephyr.elf 
+
+** Details of the journey
+
 Inspired from Lup Yuen Lee's [[https://zig.news/lupyuen/build-an-lvgl-touchscreen-app-with-zig-38lm][Article]] about Building an App with Zig and Apache NuttX RTOS
 we will try to translate C Code to Zig using ~zig translate-c~.
 We have to do this in the context of the Zephyr Build process, all compiler flags
-have to be identical like for invoking the C compiler.
-Therefore we start with:
-  
-** Step One, using the zig C compiler to compile zephyr
+have to be the same like for invoking the C compiler.
+Therefore I started with:
+
+*** Using the ~zig cc~ C compiler to compile Zephyr
+
 We try to setup a toolchain which uses ~zig cc~ as C compiler.
 
 By following the [[https://docs.zephyrproject.org/latest/develop/toolchains/custom_cmake.html][Custom CMake]] Guide of Zephyr we use this repository
@@ -33,28 +84,9 @@ and setting the ~TOOLCHAIN_VARIANT~ to ~zig~.
 For the generic (host) part of the build we use the zephyr-sdk toolchain.
 We just direct some files to the correspondig files in ~ZEPHYR_BASE~.
 Zig specific settings are in ~cmake/compiler/zig/target.cmake~.
-I just tried it for an arm board (adafruit_feather_nrf52840) so it is
-written for satisfy this needs.
+I just tried it for an arm board so it is written for satisfy this needs.
 
-Adapt to your environment:
-- setting the ~ZEPHYR_SDK_INSTALL_DIR~ in ~CMakeLists.txt~
-
-I setup Zephyr like I described [[https://learn.nodecum.org/env/build-environment/][here]].
-
-*** compilation
-for compiling the example with the zephyr sdk use:
-: west build -b adafruit_feather_nrf52840 -p always
-this should compile and build without failure. I used a recent head of zephyr (3.2.99).
-
-To compile it using zig cc:
-: west build -b adafruit_feather_nrf52840 -p always -- -DUSEZIG=1
-this will compile the Zephyr c files using zig cc.
-
-After flashig like
-: west flash -r blackmagicprobe --gdb-serial /dev/ttyACM0 --skip-rebuild --elf-file build/zephyr/zephyr.elf 
-I got a blinky LED.
-
-*** remarks
+**** Remarks
 The critical step was the _Unfixed size binary_ [[https://docs.zephyrproject.org/latest/build/cmake/index.html][Build Step]] which builds ~zephyr_pre0.elf~. 
 If we use zigs clang it stops at
 : [149/159] Linking C executable zephyr/zephyr_pre0.elf
@@ -77,3 +109,56 @@ To view the invocation of the compiler do:
 : cd build
 : ninja -v
 
+
+*** Compile main.zig with ~zig build-obj~ and use zephyr C code directly
+
+I used ~zig translate-c~ with the same compiler arguments we found Zephyr
+was using to compile ~main.c~. From this I extracted the relevant part for ~main.zig~.
+In this form all macros were already expanded.
+With some ~CMake~ wizardry I managed it to fit the compiled object file into
+the Zephyr app application (see ~zig.cmake~)
+Then I was faced with the ~compiler_barrier()~ issue, mentioned in the [[*Preconditions]].
+I was happy to got it to compile, but the expanded macros were not 
+usable from a programmers point of view.
+Thats way I 
+
+*** Translate the Devicetree to Zig
+
+My aim was to have an easy usable perdant to the ~devicetree_generated.h~ 
+header file in Zig. Whereas the header file is an artwork of encoding the
+devicetree data into C Preprocessor Macros my goal was to code the devicetree
+data in a clean and simple way which could be human viewable and usable.
+
+Therefore Zig's reach possibilities to create and initialize ~struct~'s 
+were realy useful. We got a tree which looks nearly like the ~zepyr.dts~:
+
+#+BEGIN_SRC C
+  pub const soc = struct {
+    const gpio_50000300 = .{
+      ._device = @as([*c]const c.struct_device, &c.__device_dts_ord_10),
+      .reg = [_]u32{0x50000300, 0x200, 0x50000800, 0x300},
+      .port = @as( u32, 1),
+      .gpio_controller = true,
+      .ngpios = @as( u32, 16),
+      .status = "okay",
+      .compatible = [_][]const u8{"nordic,nrf-gpio"},
+      .wakeup_source = false,
+    };
+  };
+  pub const leds = .{
+    .compatible = [_][]const u8{"gpio-leds"},
+    // 16
+    .led_0 = .{
+      .gpios = .{.ph=&soc.gpio_50000300,.pin=@as( u32, 15),.flags=@as( u32, 0)},
+      .label = "Red LED",
+    },
+  };
+#+END_SRC
+In this tree the phandles are real references of their targets.
+Thus refer to gpios of led_0 is as easy as writing:
+: dt.leds.led_0.gpios
+which is the analog of Zephyrs:
+:  GPIO_DT_SPEC_GET( DT_PATH( leds, led_0), gpios)
+
+Right now not all properties are translated, but to complete it is not too difficult.
+(Aliases, Labels, Memory Maps for example)
