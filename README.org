@@ -42,6 +42,7 @@ us to write wrappers in C to make use of Zephyr from Zig.
   - If using ~zig cc~ as toolchain, then the path of the zephyr sdk has to be adapted to your
     installation in the file ~CMakeLists.txt~:
     : set(ZEPHYR_SDK_INSTALL_DIR $ENV{HOME}/bin/zephyr-sdk-0.15.1)
+    and the file ~zephyr-sdk-gcc~.
   - The file ~src/c.zig~ contains a board (in our case for adafruit_feather_nrf52840)
     specific define:
     : @cDefine("NRF52840_XXAA", "");
