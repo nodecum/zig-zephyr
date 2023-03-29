@@ -15,30 +15,14 @@ find_program(CMAKE_C_COMPILER zigcc ${find_program_zig_args})
 find_program(CMAKE_CXX_COMPILER zigc++ ${find_program_zig_args})
 
 #list(APPEND TOOLCHAIN_C_FLAGS  -fintegrated-as) #   Enable the integrated assembler
- 
+
+include(${TOOLCHAIN_ROOT}/cmake/compiler/zig/zig-target.cmake)
 
 if(NOT "${ARCH}" STREQUAL "posix")
-  # include(${ZEPHYR_BASE}/cmake/gcc-m-cpu.cmake)
+  #include(${ZEPHYR_BASE}/cmake/gcc-m-cpu.cmake)
 
   if("${ARCH}" STREQUAL "arm")
-
-    set(ZIG_TARGET arm-freestanding-eabi)
-    
-    if (CONFIG_CPU_CORTEX_M0)
-      set(ZIG_M_CPU cortex_m0)
-    elseif(CONFIG_CPU_CORTEX_M0PLUS)
-      set(ZIG_M_CPU cortex_m0plus)
-    elseif(CONFIG_CPU_CORTEX_M1)
-      set(ZIG_M_CPU cortex_m1)
-    elseif(CONFIG_CPU_CORTEX_M3)
-      set(ZIG_M_CPU cortex_m3)
-    elseif(CONFIG_CPU_CORTEX_M4)
-      set(ZIG_M_CPU cortex_m4)
-    else()
-      message(FATAL_ERROR "Expected CONFIG_CPU_CORTEX_x to be defined")
-    endif()
-
-    
+ 
     list(APPEND TOOLCHAIN_C_FLAGS -fshort-enums )
     list(APPEND TOOLCHAIN_LD_FLAGS -fshort-enums )
       

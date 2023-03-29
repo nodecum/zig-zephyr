@@ -4,13 +4,12 @@
 
 #include(CMakeParseArguments)
 
-message("zig.cmake\n========")
-message("TOOLCHAIN_ROOT: ${TOOLCHAIN_ROOT}")
+include(cmake/compiler/zig/zig-target.cmake)
 
-# find zig script which is at this repo root (=TOOLCHAIN_ROOT)
-if(DEFINED TOOLCHAIN_ROOT)
-  set(find_program_zigscript_args PATHS ${TOOLCHAIN_ROOT} NO_DEFAULT_PATH)
-endif()
+message("zig.cmake\n========")
+
+# find zig script which is at this repo root 
+set(find_program_zigscript_args PATHS ${CMAKE_CURRENT_SOURCE_DIR} NO_DEFAULT_PATH)
 
 find_program(ZIG_BUILD_OBJ zig_build_obj ${find_program_zigscript_args})
 message("ZIG_BUILD_OBJ: ${ZIG_BUILD_OBJ}")
