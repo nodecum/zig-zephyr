@@ -1,3 +1,6 @@
 [submodule "libs/mecha"]
 	path = libs/mecha
 	url = https://github.com/Hejsil/mecha.git
+[submodule "libs/zig-yaml"]
+	path = libs/zig-yaml
+	url = https://github.com/kubkon/zig-yaml.git

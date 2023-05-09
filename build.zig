@@ -1,60 +1,42 @@
 const builtin = @import("builtin");
 const std = @import("std");
+const ZBuild = @import("ZBuild.zig");
+const Build = std.build.Builder;
 
-const Builder = std.build.Builder;
+const s = std.fs.path.sep_str;
 
-pub fn build(b: *Builder) void {
-    const optimize = b.standardOptimizeOption(.{});
-    const target = b.standardTargetOptions(.{});
+fn root_dir() []const u8 {
+    return std.fs.path.dirname(@src().file) orelse unreachable;
+}
 
-    const mecha_module = b.createModule(.{
-        .source_file = .{ .path = "libs/mecha/mecha.zig" },
+const project_binary_dir = root_dir() ++ s ++ "zbuild";
+// dts.cmake sets this
+const binary_dir_include = project_binary_dir ++ s ++ "include";
+const binary_dir_include_generated = binary_dir_include ++ s ++ "generated";
+
+pub fn build(b: *Build) !void {
+    const zbuild = try ZBuild.create(b, .{
+        .zephyr_base = "/home/robert/prog/zephyrproject/zephyr",
+        .board = "adafruit_feather_nrf52840",
     });
 
-    const test_step = b.step("test", "Run all tests in all modes.");
-
-    const kconfig_tests = b.addTest(.{
-        .root_source_file = .{ .path = "tools/kconfig.zig" },
-        .optimize = optimize,
-        .target = target,
-    });
-    kconfig_tests.addModule("mecha", mecha_module);
-    test_step.dependOn(&kconfig_tests.run().step);
-
-    const exe = b.addExecutable(.{
-        .name = "kconfig",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "tools/kconfig.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-    exe.addModule("mecha", mecha_module);
-    exe.install();
-    const run_cmd = exe.run();
-    run_cmd.step.dependOn(b.getInstallStep());
+    _ = zbuild;
+    //const optimize = b.standardOptimizeOption(.{});
+    //const target = b.standardTargetOptions(.{});
 
     // This allows the user to pass arguments to the application in the build
     // command itself, like this: `zig build run -- arg1 arg2 etc`
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    //if (b.args) |args| {
+    //    run_cmd.addArgs(args);
+    //}
 
     // This creates a build step. It will be visible in the `zig build --help` menu,
     // and can be selected like this: `zig build run`
     // This will evaluate the `run` step rather than the default, which is "install".
-    const run_step = b.step("run", "Run the app");
-    run_step.dependOn(&run_cmd.step);
+    //const run_step = b.step("run", "Run the app");
+    //run_step.dependOn(&run_cmd.step);
 
-    const all_step = b.step("all", "Build everything and runs all tests");
-    all_step.dependOn(test_step);
-    b.default_step.dependOn(all_step);
-}
-
-fn sdkPath(comptime suffix: []const u8) []const u8 {
-    if (suffix[0] != '/') @compileError("suffix must be an absolute path");
-    return comptime blk: {
-        const root_dir = std.fs.path.dirname(@src().file) orelse ".";
-        break :blk root_dir ++ suffix;
-    };
+    //const all_step = b.step("all", "Build everything and runs all tests");
+    //all_step.dependOn(test_step);
+    //b.default_step.dependOn(all_step);
 }
